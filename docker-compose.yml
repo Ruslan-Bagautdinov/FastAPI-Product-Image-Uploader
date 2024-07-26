@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "5000:8015"
+    environment:
+      API_TOKEN: ${API_TOKEN}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
+      CLOUDFLARE_KEY: ${CLOUDFLARE_KEY}
+      MOYSKLAD_KEY: ${MOYSKLAD_KEY}
+      FIREBASE_URL: ${FIREBASE_URL}
