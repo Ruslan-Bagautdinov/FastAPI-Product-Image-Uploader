@@ -10,6 +10,15 @@ from app.setup import fastapi_app
 
 @fastapi_app.post('/product-images', status_code=204, dependencies=[auth])
 async def start_images_uploading(data: list[schemas.ProductImage]):
+    """
+    Endpoint to start the process of uploading product images.
+
+    Args:
+        data (list[schemas.ProductImage]): List of product image data.
+
+    Returns:
+        None
+    """
     logger.info('Start image uploading')
 
     products_id_to_images = {rec.product_id: rec.image_link for rec in data}

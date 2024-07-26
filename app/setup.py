@@ -11,6 +11,16 @@ logger.info(f"Credential test: {cred}")
 
 
 def initialize_firebase(cred, database_url):
+    """
+    Initialize Firebase app with the given credentials and database URL.
+
+    Args:
+        cred (credentials.Certificate): Firebase credentials.
+        database_url (str): URL of the Firebase database.
+
+    Returns:
+        firebase_admin.App: Initialized Firebase app.
+    """
     try:
         app = initialize_app(cred, {'databaseURL': database_url})
         logger.info(f"Firebase initialized with URL: {database_url}")
@@ -27,4 +37,5 @@ logger.info(f"Firebase URL: {firebase_url}")
 fb = initialize_firebase(cred, firebase_url)
 
 logger.info(f"Firebase initialized with URL: {firebase_url}")
+
 fastapi_app = FastAPI()

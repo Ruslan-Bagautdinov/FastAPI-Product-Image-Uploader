@@ -5,13 +5,22 @@ from loguru import logger
 
 from app import utils
 
+# Configure logging
 logger.remove(0)
-
 logger.add("app.log", rotation="500 MB", compression="zip", level="DEBUG")
 logger.add(sys.stdout, level="INFO")
 
 
 async def start(products_id_to_images: dict[str, str]):
+    """
+    Start the process of uploading product images to Cloudflare and updating Firebase.
+
+    Args:
+        products_id_to_images (dict[str, str]): Dictionary mapping product IDs to image links.
+
+    Returns:
+        None
+    """
     logger.info('Script started')
     logger.info(f'Got {len(products_id_to_images)} rows')
 
@@ -28,6 +37,6 @@ async def start(products_id_to_images: dict[str, str]):
         if img:
             cf_image_link = await utils.check_and_upload_to_cloudflare(img, f"{product_id}.jpg", product_id)
             if cf_image_link:
-                await utils.update_image_link(product_id, cf_image_link)  # Ensure this is the new Cloudflare link
+                await utils.update_image_link(product_id, cf_image_link)
 
     logger.info('Script finished')

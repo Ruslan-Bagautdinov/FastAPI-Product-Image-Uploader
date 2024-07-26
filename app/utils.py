@@ -13,12 +13,31 @@ from app.config import CLOUDFLARE_UPLOAD_IMAGE_URL, cloudflare_headers, moysklad
 
 
 def image_on_cloudflare(image_link: str) -> bool:
+    """
+    Check if the image link is hosted on Cloudflare.
+
+    Args:
+        image_link (str): Link to the image.
+
+    Returns:
+        bool: True if the image is hosted on Cloudflare, False otherwise.
+    """
     url_pattern = r'imagedelivery\.net\/'
     match = re.search(url_pattern, image_link)
     return match is not None
 
 
 async def upload_to_cloudflare(img=None, filename: str = None) -> str:
+    """
+    Upload an image to Cloudflare Images.
+
+    Args:
+        img (io.BytesIO): Image data.
+        filename (str): Name of the file.
+
+    Returns:
+        str: Link to the uploaded image on Cloudflare.
+    """
     if img is None or filename is None:
         logger.warning('No image or filename provided for upload to Cloudflare')
         return None
@@ -45,7 +64,17 @@ async def upload_to_cloudflare(img=None, filename: str = None) -> str:
 
 
 async def check_and_upload_to_cloudflare(img, filename, product_id):
-    # Fetch the existing image link from Firebase
+    """
+    Check if the image already exists on Cloudflare and upload it if it doesn't.
+
+    Args:
+        img (io.BytesIO): Image data.
+        filename (str): Name of the file.
+        product_id (str): ID of the product.
+
+    Returns:
+        str: Link to the uploaded image on Cloudflare.
+    """
     products_collection = db.reference('Products')
     product_ref = products_collection.child(product_id)
     product_data = product_ref.get()
@@ -60,7 +89,7 @@ async def check_and_upload_to_cloudflare(img, filename, product_id):
                 await update_image_link(product_id, new_cf_image_link)
             return new_cf_image_link
         elif cf_image_link.startswith("https://imagedelivery.net"):
-            image_id = cf_image_link.split('/')[-2]  # Extract the IMAGE_ID from the URL
+            image_id = cf_image_link.split('/')[-2]
 
             existing_image_bytes = await download_image_from_cloudflare_by_id(image_id)
 
@@ -88,6 +117,16 @@ async def check_and_upload_to_cloudflare(img, filename, product_id):
 
 
 def images_are_equal(img1, img2):
+    """
+    Compare two images to check if they are identical.
+
+    Args:
+        img1 (ImageFile): First image.
+        img2 (ImageFile): Second image.
+
+    Returns:
+        bool: True if the images are identical, False otherwise.
+    """
     if img1.size != img2.size or img1.mode != img2.mode:
         return False
 
@@ -98,6 +137,15 @@ def images_are_equal(img1, img2):
 
 
 async def get_image_link_from_cloudflare(filename):
+    """
+    Get the image link from Cloudflare by filename.
+
+    Args:
+        filename (str): Name of the file.
+
+    Returns:
+        str: Link to the image on Cloudflare.
+    """
     url = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/images/v1"
     response = await _get_request(url, headers=cloudflare_headers)
     if response.status_code == 200:
@@ -105,20 +153,28 @@ async def get_image_link_from_cloudflare(filename):
         logger.debug(f"Cloudflare response data: {data}")
         images = data.get('result', [])
         for image in images:
-            # Ensure image is a dictionary before calling .get()
             if isinstance(image, dict) and image.get('filename') == filename:
-                return image.get('variants')[0]  # Assuming the first variant is the one we want
+                return image.get('variants')[0]
     else:
         logger.error(f"Failed to fetch images from Cloudflare: {response.status_code}")
     return None
 
 
 async def download_image_from_cloudflare_by_id(image_id):
+    """
+    Download an image from Cloudflare by its ID.
+
+    Args:
+        image_id (str): ID of the image.
+
+    Returns:
+        bytes: Image data.
+    """
     url = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/images/v1/{image_id}/blob"
     response = await _get_request(url, headers=cloudflare_headers, stream=True)
 
     if response.status_code == 200:
-        img_bytes = response.content  # Directly get the raw bytes from the response
+        img_bytes = response.content
         logger.info(f'Got image from Cloudflare with ID "{image_id}"')
         return img_bytes
     else:
@@ -128,6 +184,15 @@ async def download_image_from_cloudflare_by_id(image_id):
 
 
 async def delete_image_from_cloudflare_by_id(image_id):
+    """
+    Delete an image from Cloudflare by its ID.
+
+    Args:
+        image_id (str): ID of the image.
+
+    Returns:
+        None
+    """
     url = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/images/v1/{image_id}"
     response = await _delete_request(url, headers=cloudflare_headers)
 
@@ -138,6 +203,16 @@ async def delete_image_from_cloudflare_by_id(image_id):
 
 
 async def update_image_link(product_id: str, image_link: str):
+    """
+    Update the image link for a product in Firebase.
+
+    Args:
+        product_id (str): ID of the product.
+        image_link (str): New image link.
+
+    Returns:
+        None
+    """
     logger.info(f'Try update img for product({product_id})')
     products_collection = db.reference('Products')
     product_ref = products_collection.child(product_id)
@@ -146,6 +221,12 @@ async def update_image_link(product_id: str, image_link: str):
 
 
 def get_images() -> dict[str, str]:
+    """
+    Get all images from Firebase.
+
+    Returns:
+        dict[str, str]: Dictionary mapping product IDs to image links.
+    """
     logger.info('Try get images from firebase')
     products_collection = db.reference('Products')
     products: dict = products_collection.get()
@@ -155,12 +236,30 @@ def get_images() -> dict[str, str]:
 
 
 def image_on_moysklad(image_link: str) -> bool:
+    """
+    Check if the image link is hosted on MoySklad.
+
+    Args:
+        image_link (str): Link to the image.
+
+    Returns:
+        bool: True if the image is hosted on MoySklad, False otherwise.
+    """
     url_pattern = r'moysklad\.ru\/'
     match = re.search(url_pattern, image_link)
     return match is not None
 
 
 async def get_download_href(image_link: str):
+    """
+    Get the download href for an image from MoySklad.
+
+    Args:
+        image_link (str): Link to the image.
+
+    Returns:
+        str: Download href for the image.
+    """
     logger.info(f'Try get download href from "{image_link}"')
     response = await _get_request(image_link, headers=moysklad_headers)
     data = response.json()
@@ -170,6 +269,15 @@ async def get_download_href(image_link: str):
 
 
 async def download_image_from_moysklad(image_link: str):
+    """
+    Download an image from MoySklad.
+
+    Args:
+        image_link (str): Link to the image.
+
+    Returns:
+        io.BytesIO: Image data.
+    """
     logger.info(f'Try download image from "{image_link}"')
     response = await _get_request(image_link, headers=moysklad_headers, stream=True)
 
@@ -184,6 +292,15 @@ async def download_image_from_moysklad(image_link: str):
 
 
 def image_to_bytes(img: ImageFile):
+    """
+    Convert an image to bytes.
+
+    Args:
+        img (ImageFile): Image to convert.
+
+    Returns:
+        io.BytesIO: Image data as bytes.
+    """
     if img.mode != 'RGB':
         img = img.convert('RGB')
     image_bytes = io.BytesIO()
@@ -193,6 +310,18 @@ def image_to_bytes(img: ImageFile):
 
 
 async def _get_request(url, params=None, headers=None, stream=False) -> Response:
+    """
+    Make an asynchronous GET request.
+
+    Args:
+        url (str): URL to request.
+        params (dict): Query parameters.
+        headers (dict): Request headers.
+        stream (bool): Whether to stream the response.
+
+    Returns:
+        Response: Response object.
+    """
     response: Response = await asyncio.to_thread(
         requests.get,
         url=url,
@@ -205,6 +334,21 @@ async def _get_request(url, params=None, headers=None, stream=False) -> Response
 
 async def _post_request(url, data=None, json=None, files=None, params=None, headers=None,
                         stream=None) -> requests.Response:
+    """
+    Make an asynchronous POST request.
+
+    Args:
+        url (str): URL to request.
+        data (dict): Form data.
+        json (dict): JSON data.
+        files (dict): Files to upload.
+        params (dict): Query parameters.
+        headers (dict): Request headers.
+        stream (bool): Whether to stream the response.
+
+    Returns:
+        Response: Response object.
+    """
     response: requests.Response = await asyncio.to_thread(
         requests.post,
         url=url,
@@ -219,6 +363,16 @@ async def _post_request(url, data=None, json=None, files=None, params=None, head
 
 
 async def _delete_request(url, headers=None) -> requests.Response:
+    """
+    Make an asynchronous DELETE request.
+
+    Args:
+        url (str): URL to request.
+        headers (dict): Request headers.
+
+    Returns:
+        Response: Response object.
+    """
     response: requests.Response = await asyncio.to_thread(
         requests.delete,
         url=url,
